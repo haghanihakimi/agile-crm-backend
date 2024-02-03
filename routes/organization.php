@@ -8,7 +8,7 @@ Route::controller(OrganizationController::class)->group(function () {
     Route::post('/organization/create', 'createOrganization')
         ->middleware(['auth:sanctum']);
 
-    Route::get('/first/organization', 'getFirstOrg')
+    Route::get('/active/organization', 'getActiveOrg')
         ->middleware(['auth:sanctum']);
 
     Route::get('/organization/read/{orgUuid}', 'getOrganization')
@@ -22,13 +22,4 @@ Route::controller(OrganizationController::class)->group(function () {
 
     Route::delete('/organization/delete/{orgUuid}', 'deleteOrganization')
         ->middleware(['auth:sanctum']);
-
-    Route::post('/organization/invitation', 'generateInvitationLink')
-        ->middleware(['auth:sanctum']);
-
-    Route::get('/organization/new/user/invitation/{email}/{signature}/check', 'newUserInvitationCheck')
-        ->middleware(['guest']);
-
-    Route::post('/organization/new/user/invitation/acceptance/{email}/{signature}', 'newUserInviteAcceptance')
-        ->middleware(['guest']);
 });

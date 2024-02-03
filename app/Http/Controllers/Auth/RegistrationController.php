@@ -3,40 +3,84 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\InvitationSerivce;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\LoginRequest;
 use App\Models\User;
 
 class RegistrationController extends Controller
 {
+    private $invitationSerivce;
+
+    public function __construct(InvitationSerivce $invitationSerivce)
+    {
+        $this->invitationSerivce = $invitationSerivce;
+    }
+
     public function store(Request $request)
     {
-        $validator = Validator::make(
-            $request->all(),
-            [
+        if ($request->token || $this->invitationSerivce->validateInvitation($request->email, $request->token)) {
+            $validator = Validator::make($request->all(), [
                 "firstname" => ["required", "string", "min:3", "max:24"],
                 "lastname" => ["required", "string", "min:3", "max:24"],
-                "username" => ["nullable", "string", "min:4", "unique:users"],
+                "email" => ["required", "email"],
+                "password" => ["required", "string", "min:6", "confirmed"],
+                "token" => ["required", "string", "max:64", "min:64"],
+            ]);
+        } else {
+            $validator = Validator::make($request->all(), [
+                "firstname" => ["required", "string", "min:3", "max:24"],
+                "lastname" => ["required", "string", "min:3", "max:24"],
                 "email" => ["required", "email", "unique:users"],
                 "password" => ["required", "string", "min:6", "confirmed"],
+            ]);
+        }
+
+        if ($validator->fails()) {
+            return response()->json([
+                "code" => 422,
+                "message" => $validator->errors(),
+                "token" => null,
+                "expire" => null,
+                "user" => null,
+            ], 422);
+        }
+
+        $user = User::updateOrCreate(
+            [
+                "email" => $request->email,
+            ],
+            [
+                "firstname" => $request->firstname,
+                "lastname" => $request->lastname,
+                "username" => Str::upper(Str::random(16)),
+                "email_verified_at" => null,
+                "password" => Hash::make($request->password_confirmation),
             ]
         );
 
-        if (!$validator->fails()) {
-            $user = User::create([
-                "firstname" => $request->firstname,
-                "lastname" => $request->lastname,
-                "username" => !empty($request->username) ? $request->username : Str::upper(Str::random(16)),
-                "email" => $request->email,
-                "email_verified_at" => null,
-                "password" => Hash::make($request->password_confirmation),
-            ]);
-            return response()->json($user);
+        if (!$user) {
+            return response()->json([
+                "code" => 500,
+                "message" => "Unable to create new account at this moment. Please try again later.",
+                "token" => null,
+                "expire" => null,
+                "user" => null,
+            ], 500);
         }
-        return response()->json($validator->errors());
+
+        $token = $user->createToken($user->id . ':login', ['general:full'])->plainTextToken;
+
+        $cookie = cookie('login', $token, env('SESSION_LIFETIME'));
+
+        return response()->json([
+            'code' => 200,
+            'message' => 'Your account successfully created.',
+            'token' => $token,
+            'expire' => env('SESSION_LIFETIME'),
+            'user' => $user,
+        ], 200)->withCookie($cookie);
     }
 }

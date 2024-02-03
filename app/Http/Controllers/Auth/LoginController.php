@@ -30,13 +30,13 @@ class LoginController extends Controller
 
                 $token = $user->createToken($user->id . ':login', ['general:full'])->plainTextToken;
 
-                $cookie = cookie('login', $token, env('SESSION_LIFETIME'));
+                $cookie = cookie('auth', $token, env('SESSION_LIFETIME'));
 
                 return response()->json([
                     'token' => $token,
                     'expire' => env('SESSION_LIFETIME'),
                     'user' => $user,
-                ], 200)->withCookie($cookie);
+                ], 200);
             }
             return response()->json([
                 "message" => "Incorrect email or password.",

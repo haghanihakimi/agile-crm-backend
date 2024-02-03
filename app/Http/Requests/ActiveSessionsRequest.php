@@ -41,10 +41,6 @@ class ActiveSessionsRequest extends FormRequest
                 "sessionable_id" => $sessionable['id'],
             ]
         );
-
-        // RateLimiter::hit($this->throttleKey());
-
-        // RateLimiter::clear($this->throttleKey());
         return response()->json($session);
     }
 

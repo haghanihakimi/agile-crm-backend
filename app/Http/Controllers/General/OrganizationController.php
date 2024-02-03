@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ActiveSessionsRequest;
 use App\Http\Requests\MemberRequest;
 use App\Models\InvitationToken;
-use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -53,9 +52,11 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function getFirstOrg(Organization $organizationModel) {
+    public function getActiveOrg(Organization $organizationModel) {
         $user = Auth::guard('api')->user();
-        $org = $user->members()->where('memberable_type', 'App\Models\Organization')->first();
+        $org = $user->activeSessions()
+        ->where('sessionable_type', 'App\Models\Organization')
+        ->with('sessionable:id,org_uuid,name')->first();
 
         if (!$org) {
             return response()->json([
@@ -64,7 +65,7 @@ class OrganizationController extends Controller
                 "organization" => [],
             ]);
         }
-        $org = Organization::find($org->memberable_id);
+        $org = Organization::find($org->sessionable->id);
 
         return response()->json([
             "code" => 200,
@@ -73,7 +74,7 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function getOrganization($orgUuid, Organization $organizationModel, Project $projectModel)
+    public function getOrganization($orgUuid, ActiveSessionsRequest $activeSessionsRequest, Organization $organizationModel)
     {
         $org = Organization::where("org_uuid", $orgUuid)->first();
 
@@ -92,6 +93,8 @@ class OrganizationController extends Controller
                 "code" => 403,
             ]);
         }
+
+        $activeSessionsRequest->store(["user_id" => Auth::guard("api")->user()->id, "type" => 'App\Models\Organization', "id" => $org->id]);
 
         return response()->json([
             "organization" => $org,
@@ -213,98 +216,5 @@ class OrganizationController extends Controller
             "code" => 200,
             "message" => $organization->name . " deleted.",
         ]);
-    }
-
-    public static function generateInvitationLink($users)
-    {
-        if (count($users) > 0) {
-            $auth = Auth::guard("api")->user();
-            $org = Organization::where("id", $auth->activeSessions()->where("sessionable_type", "App\Models\Organization")->first()->sessionable_id)->first();
-
-            $existingUsers = [];
-
-            foreach ($users as $user) {
-                if (!User::where("email", $user)->exists()) {
-                    $newUser = User::create([
-                        "username" => Str::upper(Str::random(16)),
-                        "email" => $user
-                    ]);
-                    OrgInvitationTask::dispatch($auth, $newUser, $org);
-                } else {
-                    $existingUsers[] = User::where("email", $user)->first()->email;
-                }
-            }
-            return [
-                "message" => $existingUsers,
-                "existings" => $existingUsers,
-            ];
-        }
-
-        return ["error" => "Please give at least one email address to add new member."];
-
-    }
-
-    public function newUserInvitationCheck($email, $signature)
-    {
-        if (!Auth::guard('api')->check()) {
-            if (
-                InvitationToken::where("invitee_email", $email)
-                    ->where("token", $signature)->exists()
-            ) {
-                $user = User::where("email", $email)->first();
-                $token = InvitationToken::where("invitee_email", $user->email)
-                    ->where("token", $signature)->first();
-                if (count($user->tokens) <= 0 && empty($user->firstname) && $token->created_at->diffInDays(now()) < 7) {
-                    return response()->json(true);
-                } else {
-                    return response()->json(false);
-                }
-            }
-        }
-        return response()->json(false);
-    }
-
-    public function newUserInviteAcceptance(Request $request, $email, $signature, MemberRequest $memberRequest, ActiveSessionsRequest $activeSessionsRequest)
-    {
-        $validator = Validator::make(
-            $request->user,
-            [
-                "firstname" => ['required', 'string', 'max:255', 'min:3'],
-                "lastname" => ["required", "string", "min:3", "max:255"],
-                "password" => ["required", "string", "min:5", "confirmed"],
-            ]
-        );
-
-        if (!$validator->fails()) {
-            if (InvitationToken::where("invitee_email", $email)->where("token", $signature)->exists()) {
-                $token = InvitationToken::where("invitee_email", $email)->where("token", $signature)->first();
-                $organization = Organization::find($token->tokenable_id);
-                if ($token->created_at->diffInDays(now()) < 7) {
-                    $user = User::where("email", $email)->first();
-
-                    $user->firstname = $request->user['firstname'];
-                    $user->lastname = $request->user['lastname'];
-                    $user->password = Hash::make($request->user['password_confirmation']);
-
-                    if ($user->save()) {
-                        $memberRequest->store(["user_id" => $user->id, "type" => 'App\Models\Organization', "id" => $organization->id]);
-                        $token->delete();
-                        $user = User::find($user->id);
-
-                        $token = $user->createToken($user->id . ':login', ['general:full'])->plainTextToken;
-                        $cookie = cookie('login', $token, env('SESSION_LIFETIME'));
-
-                        return response()->json([
-                            'token' => $token,
-                            'expire' => env('SESSION_LIFETIME'),
-                        ])->withCookie($cookie);
-                    }
-                    return response()->json(false);
-                }
-                return response()->json(false);
-            }
-            return response()->json(false);
-        }
-        return response()->json($validator->errors());
     }
 }

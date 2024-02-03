@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\General;
 
 use App\Http\Controllers\Controller;
+use App\Models\File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -69,5 +70,52 @@ class UserController extends Controller
         return response()->json([
             "message" => "Deleting your account failed."
         ], 500);
+    }
+
+    public function changePicture(Request $request)
+    {
+        // validate
+        $user = Auth::guard('api')->user()->makeVisible(['email_verified_at', 'created_at']);
+
+        if (!$request->hasFile('newImage')) {
+            return response()->json([
+                "code" => 422,
+                "message" => "Select image file to continue.",
+                "user" => $user,
+            ], 422);
+        }
+
+        $file = $request->file('newImage');
+        $originalName = $file->getClientOriginalName();
+        $originalMimeType = $file->getClientMimeType();
+        $originalFormat = $file->getClientOriginalExtension();
+        $originalFileSize = $file->getSize();
+        $hashName = $file->hashName();
+
+        $stored = $file->storeAs('uploads/users/profiles/' . $user->username, $hashName, 'public');
+
+        $user->image = config('app.app_url')."/storage/".$stored;
+        $user->save();
+
+        $uploadedFile = File::create([
+            'file_uuid' => Str::uuid(),
+            'uploaded_by' => $user->id,
+            'fileable_type' => 'App\Models\User',
+            'fileable_id' => $user->id,
+            'file_name' => $hashName,
+            'original_name' => $originalName,
+            'file_format' => $originalFormat,
+            'file_type' => $originalMimeType,
+            'file_path' => $stored,
+            'file_size' => $originalFileSize,
+            'used_for' => 'Profile',
+        ]);
+
+
+        return response()->json([
+            "code" => 200,
+            "message" => "Profile picture successfully updated.",
+            "user" => $user,
+        ], 200);
     }
 }

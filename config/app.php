@@ -31,6 +31,11 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    'front_url' => env('FRONT_URL'),
+
+
+    'app_url' => env('APP_URL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

@@ -14,6 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->constrained("users")->onDelete('cascade');
             $table->morphs('memberable');
+            $table->enum('role', ['admin', 'moderator', 'member'])->default('moderator');
             $table->timestamps();
         });
     }

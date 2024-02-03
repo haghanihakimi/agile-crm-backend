@@ -10,7 +10,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 use App\Models\InvitationToken;
 use App\Models\User;
 use App\Notifications\OrgInviteNotification;
@@ -38,9 +37,8 @@ class OrgInvitationTask implements ShouldQueue
      */
     public function handle(): void
     {
-
-        if (User::where("email", $this->user->email)->exists()) {
-            $user = User::where("email", $this->user->email)->first();
+        $user = User::where("email", $this->user->email)->first();
+        if ($user) {
             $token = InvitationToken::create([
                 "invitee_email" => $user->email,
                 "token" => Str::random(64),
@@ -48,7 +46,7 @@ class OrgInvitationTask implements ShouldQueue
                 "tokenable_id" => $this->organizaton->id,
                 "invited_for" => "Organization",
             ]);
-            $url = env('FRONT_URL')."/organization/new/user/invitation/".$user->email."/".$token->token;
+            $url = config('app.front_url')."/organization/new/user/invitation/".$user->email."/".$token->token;
             $data = [
                 "subject" => $this->authUser->firstname . ' requested you to joing ' . $this->organizaton->name,
                 "greeting" => !empty($user->firstname) ? "Hello ".$user->firstname."!" : "Hello!",

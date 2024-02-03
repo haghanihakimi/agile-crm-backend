@@ -70,5 +70,10 @@ class TaskFileHandlerService
             }
             return $failedUploads;
         }
+        return [
+            "code" => 422,
+            "message" => "Please select files to upload!",
+            "task" => $task->load(['statuses', 'priorities', 'members.users', 'comments.users', 'files', 'edits.users']),
+        ];
     }
 }

@@ -7,6 +7,9 @@ use App\Http\Controllers\Auth\RestoreAccountController;
 
 //Signin Routes
 Route::controller(LoginController::class)->group(function () {
+    Route::get('/athing', function () {
+        return response()->json('a thing');
+    });
     Route::post('/signin', 'login')->middleware(['guest']);
     Route::get('/auth/check', function () {
         return response()->json(Auth::guard('api')->check() ? [
