@@ -17,7 +17,7 @@ Route::controller(OrganizationController::class)->group(function () {
     Route::get('/organizations/read', 'getOrganizations')
         ->middleware(['auth:sanctum']);
 
-    Route::post('/organization/update/{orgUuid}', 'updateOrganization')
+    Route::patch('/organization/update/{orgUuid}', 'updateOrganization')
         ->middleware(['auth:sanctum']);
 
     Route::delete('/organization/delete/{orgUuid}', 'deleteOrganization')

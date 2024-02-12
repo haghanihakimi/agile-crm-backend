@@ -178,7 +178,6 @@ class TaskController extends Controller
 
     public function updateTask(Request $request, $orgUuid, $projectIuid, $taskUuid, Task $taskModel)
     {
-
         $org = Organization::where("org_uuid", $orgUuid)->first();
         $project = Project::where("project_uuid", $projectIuid)->first();
         $task = Task::where("task_uuid", $taskUuid)->first();

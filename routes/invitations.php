@@ -14,9 +14,6 @@ Route::controller(MembersController::class)->group(function () {
     Route::post('/organization/invitation', 'generateInvitationLink')
         ->middleware(['auth:sanctum']);
 
-    Route::post('/members/invitations', 'inviteMembers')
-        ->middleware(['auth:sanctum']);
-
     Route::post('/invitation/acceptance/{invitationId}', 'acceptInvitation')
         ->middleware(['auth:sanctum']);
 

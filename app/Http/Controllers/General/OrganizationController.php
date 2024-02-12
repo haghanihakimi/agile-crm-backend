@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ActiveSessionsRequest;
 use App\Http\Requests\MemberRequest;
 use App\Models\InvitationToken;
+use App\Services\SessionsService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -18,6 +19,13 @@ use Illuminate\Support\Str;
 
 class OrganizationController extends Controller
 {
+    private $sessionsService;
+
+    public function __construct(SessionsService $sessionsService)
+    {
+        $this->sessionsService = $sessionsService;
+    }
+
     public function createOrganization(Request $request, MemberRequest $memberRequest)
     {
         $validator = Validator::make($request->all(), [
@@ -43,7 +51,12 @@ class OrganizationController extends Controller
         ]);
 
 
-        $memberRequest->store(["user_id" => Auth::guard("api")->user()->id, "type" => 'App\Models\Organization', "id" => $organization->id]);
+        $memberRequest->store([
+            "user_id" => Auth::guard("api")->user()->id,
+            "type" => 'App\Models\Organization',
+            "id" => $organization->id,
+            "role" => 'admin',
+        ]);
 
         return response()->json([
             "code" => 200,
@@ -52,11 +65,12 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function getActiveOrg(Organization $organizationModel) {
+    public function getActiveOrg()
+    {
         $user = Auth::guard('api')->user();
         $org = $user->activeSessions()
-        ->where('sessionable_type', 'App\Models\Organization')
-        ->with('sessionable:id,org_uuid,name')->first();
+            ->where('sessionable_type', 'App\Models\Organization')
+            ->with('sessionable:id,org_uuid,name')->first();
 
         if (!$org) {
             return response()->json([
@@ -74,7 +88,7 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function getOrganization($orgUuid, ActiveSessionsRequest $activeSessionsRequest, Organization $organizationModel)
+    public function getOrganization($orgUuid)
     {
         $org = Organization::where("org_uuid", $orgUuid)->first();
 
@@ -86,7 +100,7 @@ class OrganizationController extends Controller
             ]);
         }
 
-        if (Gate::inspect('view', [$organizationModel, $org->id])->denied()) {
+        if (Gate::inspect('view', [$org, $org->id])->denied()) {
             return response()->json([
                 "organization" => [],
                 "message" => 'You are not a member of the current organization.',
@@ -94,7 +108,11 @@ class OrganizationController extends Controller
             ]);
         }
 
-        $activeSessionsRequest->store(["user_id" => Auth::guard("api")->user()->id, "type" => 'App\Models\Organization', "id" => $org->id]);
+        $this->sessionsService->toggleSession(
+            Auth::guard("api")->user()->id,
+            'App\Models\Organization',
+            $org->id
+        );
 
         return response()->json([
             "organization" => $org,
@@ -103,31 +121,37 @@ class OrganizationController extends Controller
         ]);
     }
 
-    public function getOrganizations(Organization $organizationModel)
+    public function getOrganizations()
     {
         $user = Auth::guard("api")->user();
+        $memberables = $user->members()->where('memberable_type', 'App\Models\Organization')->pluck('memberable_id');
 
-        // $createdOrganizations = Organization::where('creator_id', $user->id)->get();
-
-        $memberOrganizations = Organization::whereIn('id', $user->members()->where('memberable_type', 'App\Models\Organization')->pluck('memberable_id'))->get();
-
-        if (count($memberOrganizations) > 0) {
-            // $organizations = $createdOrganizations->merge($memberOrganizations);
-
+        if (count($memberables) <= 0) {
             return response()->json([
-                "code" => 200,
-                "organizations" => $memberOrganizations,
-                "message" => '',
+                "code" => 404,
+                "organizations" => [],
+                "message" => 'Organization not found.',
             ]);
         }
+
+        $organizations = Organization::whereIn('id', $memberables)->get();
+
+        if (count($organizations) <= 0) {
+            return response()->json([
+                "code" => 404,
+                "organizations" => [],
+                "message" => 'Organization not found.',
+            ]);
+        }
+
         return response()->json([
-            "code" => 404,
-            "organizations" => [],
-            "message" => 'Organization not found.',
+            "code" => 200,
+            "organizations" => $organizations,
+            "message" => '',
         ]);
     }
 
-    public function updateOrganization(Request $request, $orgUuid, Organization $organizationModel)
+    public function updateOrganization(Request $request, $orgUuid)
     {
         $organization = Organization::where("org_uuid", $orgUuid)->first();
 
@@ -136,21 +160,21 @@ class OrganizationController extends Controller
                 "code" => 404,
                 "message" => "Incorrect organization entry.",
                 "organization" => [],
-            ]);
+            ], 404);
         }
-        $orgModifyPermission = Gate::inspect('update', [$organizationModel, $organization->id]);
+        $orgModifyPermission = Gate::inspect('update', [$organization, $organization->id]);
 
         if ($orgModifyPermission->denied()) {
             return response()->json([
                 "code" => 403,
-                "message" => "You are not a member of the current organization.",
+                "message" => "You are not allowed to modify this current organization!",
                 "organization" => [],
-            ]);
+            ], 403);
         }
 
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255', 'min:3'],
-            "description" => ["nullable", "string"],
+            "description" => ["nullable", "string", "max:500"],
         ]);
 
         if ($validator->fails()) {
@@ -158,22 +182,21 @@ class OrganizationController extends Controller
                 "code" => 422,
                 "message" => $validator->errors(),
                 "organization" => [],
-            ]);
+            ], 422);
         }
 
         $organization->name = $request->name;
-        $organization->description = ($request->description && !empty($request->description)) ?
-            $request->description : $organization->description;
+        $organization->description = $request->description;
         $organization->save();
 
         return response()->json([
             "code" => 200,
             "message" => "Organization sucessfully updated.",
             "organization" => $organization,
-        ]);
+        ], 200);
     }
 
-    public function deleteOrganization($orgUuid, Organization $organizationModel)
+    public function deleteOrganization($orgUuid)
     {
         $organization = Organization::where("org_uuid", $orgUuid)->first();
         $user = Auth::guard('api')->user();
@@ -181,17 +204,21 @@ class OrganizationController extends Controller
         if (!$organization) {
             return response()->json([
                 "code" => 404,
-                "message" => "Incorrect organization entry."
-            ]);
+                "message" => "Incorrect organization entry.",
+                "organization" => [],
+                "sessions" => $user->activeSessions()->count(),
+            ], 404);
         }
 
-        $orgModifyPermission = Gate::inspect('delete', [$organizationModel, $organization->id]);
+        $orgModifyPermission = Gate::inspect('delete', [$organization, $organization->id]);
 
         if ($orgModifyPermission->denied()) {
             return response()->json([
                 "code" => 403,
-                "message" => "You are not member of this organization."
-            ]);
+                "message" => "You cannot delete this organization.",
+                "organization" => [],
+                "sessions" => $user->activeSessions()->count(),
+            ], 403);
         }
 
         $organization->members->each->delete();
@@ -210,11 +237,25 @@ class OrganizationController extends Controller
         });
 
         $organization->projects->each->delete();
+
         $organization->delete();
+
+        $firstOrganization = Auth::guard('api')->user()->members()
+            ->where('memberable_type', 'App\Models\Organization')->first();
+
+        if ($firstOrganization) {
+            $this->sessionsService->toggleSession(
+                Auth::guard("api")->user()->id,
+                'App\Models\Organization',
+                $firstOrganization->memberable_id
+            );
+        }
 
         return response()->json([
             "code" => 200,
             "message" => $organization->name . " deleted.",
-        ]);
+            "organization" => $organization,
+            "sessions" => $user->activeSessions()->count(),
+        ], 200);
     }
 }

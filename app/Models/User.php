@@ -41,6 +41,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'remember_token',
         'email_verified_at',
+        'phone',
+        'deleted_at',
         'created_at',
         'updated_at',
     ];
@@ -63,7 +65,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function tasks()
     {
-        return $this->belongsToMany(Task::class, 'task_user');
+        return $this->belongsToMany(Task::class, Member::class, 'user_id', 'id');
     }
 
     public function comments()

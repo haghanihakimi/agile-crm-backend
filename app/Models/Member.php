@@ -19,6 +19,7 @@ class Member extends Model
         'user_id',
         'memberable_id',
         'memberable_type',
+        'role',
     ];
     
     /**
@@ -28,10 +29,8 @@ class Member extends Model
     */
    protected $hidden = [
        'id',
-       'user_id',
        'memberable_type',
        'memberable_id',
-       'created_at',
        'updated_at',
    ];
 

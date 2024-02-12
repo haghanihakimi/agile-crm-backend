@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ActiveSessionsRequest;
+use App\Services\SessionsService;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +13,13 @@ use App\Models\User;
 
 class LoginController extends Controller
 {
+    private $sessionsService;
+
+    public function __construct(SessionsService $sessionsService)
+    {
+        $this->sessionsService = $sessionsService;
+    }
+
     public function login(Request $request)
     {
         $validator = Validator::make(
@@ -28,9 +37,9 @@ class LoginController extends Controller
                     $user->restore();
                 }
 
-                $token = $user->createToken($user->id . ':login', ['general:full'])->plainTextToken;
+                $token = $user->createToken($user->id . ':login', ['general:full'], now()->addMonths(1))->plainTextToken;
 
-                $cookie = cookie('auth', $token, env('SESSION_LIFETIME'));
+                $this->sessionsService->activateSession($user, 'App\Models\Organization');
 
                 return response()->json([
                     'token' => $token,

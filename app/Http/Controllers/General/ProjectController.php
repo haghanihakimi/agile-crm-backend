@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
 
 class ProjectController extends Controller
 {
-    public function getProjects($orgUuid, Organization $organizationModel)
+    public function getProjects($orgUuid)
     {
         $organization = Organization::where("org_uuid", $orgUuid)->first();
 
@@ -30,7 +30,7 @@ class ProjectController extends Controller
         }
 
         $user = Auth::guard('api')->user();
-        $orgMember = Gate::inspect('view', [$organizationModel, $organization->id]);
+        $orgMember = Gate::inspect('view', [$organization, $organization->id]);
 
         if ($orgMember->denied()) {
             return response()->json([
@@ -70,7 +70,7 @@ class ProjectController extends Controller
         // return response()->json([]);
     }
 
-    public function currentProject($orgUuid, $projectUuid, Project $projectModel, Organization $organizationModel)
+    public function currentProject($orgUuid, $projectUuid)
     {
         $org = Organization::where("org_uuid", $orgUuid)->first();
         $user = Auth::guard('api')->user();
@@ -82,7 +82,7 @@ class ProjectController extends Controller
                 "message" => 'Incorrect organization or project entry!',
             ]);
         }
-        
+
         $project = $org->projects()->where("project_uuid", $projectUuid)->first();
         if (!$project) {
             return response()->json([
@@ -92,8 +92,8 @@ class ProjectController extends Controller
             ]);
         }
 
-        $projectMember = Gate::inspect('view', [$projectModel, $project->id]);
-        $orgMember = Gate::inspect('view', [$organizationModel, $org->id]);
+        $projectMember = Gate::inspect('view', [$project, $project->id]);
+        $orgMember = Gate::inspect('view', [$org, $org->id]);
 
         if ($projectMember->denied() && $orgMember->denied()) {
             return response()->json([
@@ -110,10 +110,10 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function createProject(Request $request, $orgUuid, Organization $organizationModel, Project $projectModel, MemberRequest $memberRequest, ActiveSessionsRequest $activeSessionsRequest)
+    public function createProject(Request $request, $orgUuid, Project $projectModel, MemberRequest $memberRequest)
     {
         $org = Organization::where('org_uuid', $orgUuid)->first();
-        
+
         if (!$org) {
             return response()->json([
                 "code" => 404,
@@ -164,8 +164,18 @@ class ProjectController extends Controller
         // Attach the project to the organization
         $project->organizations()->attach($org->id, ['created_at' => now(), 'updated_at' => now()]);
 
+        $project->pivot = [
+            "organization_id" => $org->id,
+            "project_id" => $project->id,
+        ];
+
         // Store the member request
-        $memberRequest->store(["user_id" => $user->id, "type" => 'App\Models\Project', "id" => $project->id]);
+        $memberRequest->store([
+            "user_id" => $user->id,
+            "type" => 'App\Models\Project',
+            "id" => $project->id,
+            "role" => "admin",
+        ]);
 
         return response()->json([
             "code" => 200,
@@ -174,7 +184,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function updateProject(Request $request, $orgUuid, $projectUuid, Organization $organizationModel, Project $projectModel)
+    public function updateProject(Request $request, $orgUuid, $projectUuid)
     {
         $org = Organization::where('org_uuid', $orgUuid)->first();
 
@@ -198,8 +208,8 @@ class ProjectController extends Controller
         }
 
         // Check if the user has permission to modify the project and view the organization
-        $projectModifyPermission = Gate::inspect('view', [$projectModel, $project->id]);
-        $orgMember = Gate::inspect('view', [$organizationModel, $org->id]);
+        $projectModifyPermission = Gate::inspect('view', [$project, $project->id]);
+        $orgMember = Gate::inspect('view', [$org, $org->id]);
 
         if ($projectModifyPermission->denied() && $orgMember->denied()) {
             return response()->json([
@@ -240,7 +250,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function deleteProject($orgUuid, $projectUuid, Organization $organizationModel, Project $projectModel)
+    public function deleteProject($orgUuid, $projectUuid)
     {
         $org = Organization::where("org_uuid", $orgUuid)->first();
 
@@ -261,8 +271,8 @@ class ProjectController extends Controller
             ]);
         }
 
-        $projectModifyPermission = Gate::inspect('view', [$projectModel, $project->id]);
-        $orgMember = Gate::inspect('view', [$organizationModel, $org->id]);
+        $projectModifyPermission = Gate::inspect('view', [$project, $project->id]);
+        $orgMember = Gate::inspect('view', [$org, $org->id]);
 
         if ($projectModifyPermission->denied() && $orgMember->denied()) {
             return response()->json([
@@ -321,9 +331,8 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function totalProjects($orgUuid, Organization $organization)
+    public function totalProjects($orgUuid)
     {
-        $user = Auth::guard('api')->user();
         $org = Organization::where("org_uuid", $orgUuid)->first();
 
         if (!$org) {
@@ -334,7 +343,7 @@ class ProjectController extends Controller
             ]);
         }
 
-        if (Gate::inspect('view', [$organization, $org->id])->denied()) {
+        if (Gate::inspect('view', [$org, $org->id])->denied()) {
             return response()->json([
                 "code" => 403,
                 "message" => "You are not a member of the current organization.",
@@ -351,9 +360,10 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function showProject($orgUuid, $projectUuid, Organization $organizationModel, Project $projectModel) {
-        $org = $organizationModel->where('org_uuid', $orgUuid)->first();
-        $project = $projectModel->where('project_uuid', $projectUuid)->first();
+    public function showProject($orgUuid, $projectUuid)
+    {
+        $org = Organization::where('org_uuid', $orgUuid)->first();
+        $project = Project::where('project_uuid', $projectUuid)->first();
 
         if (!$org || !$project) {
             return response()->json([
@@ -363,8 +373,9 @@ class ProjectController extends Controller
             ]);
         }
 
-        $projectPermission = Gate::inspect('view', [$projectModel, $project->id]);
-        $orgPermission = Gate::inspect('view', [$organizationModel, $org->id]);
+        $projectPermission = Gate::inspect('view', [$project, $project->id]);
+        $orgPermission = Gate::inspect('view', [$org, $org->id]);
+        
         if ($orgPermission->denied() || $projectPermission->denied()) {
             return response()->json([
                 "code" => 403,
@@ -372,7 +383,7 @@ class ProjectController extends Controller
                 "project" => [],
             ]);
         }
-        
+
         return response()->json([
             "code" => 200,
             "message" => '',

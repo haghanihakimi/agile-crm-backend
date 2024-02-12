@@ -5,6 +5,8 @@ use App\Http\Controllers\General\UserController;
 
 //Signin Routes
 Route::controller(UserController::class)->group(function () {
+    Route::get('/fetch/profile/user/{userId}', 'getProfileUser')->middleware(['auth:sanctum']);
+
     Route::patch('/save/profile/settings', 'saveSettings')->middleware(['auth:sanctum']);
 
     Route::post('/change/profile/picture', 'changePicture')->middleware(['auth:sanctum']);

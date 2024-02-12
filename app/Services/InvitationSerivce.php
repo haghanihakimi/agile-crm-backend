@@ -32,12 +32,12 @@ class InvitationSerivce
 
         if ($joinOrg['code'] === 200) {
             foreach ($org->projects as $project) {
-                $joingProject[] = $this->joinProject($project->id, $user);
+                $joiningProject[] = $this->joinProject($project->id, $user);
                 // foreach ($project->tasks as $task) {
-                //     $joinTask[] = $this->joinTask($task->id, $user);
+                //     $joiningProject[] = $this->joinTask($task->id, $user);
                 // }
             }
-            // $invitation->delete();
+            $invitation->delete();
             return [
                 "code" => 200,
                 "message" => "You joind " . $org->name . " organization!",
@@ -185,19 +185,19 @@ class InvitationSerivce
             }
 
             foreach ($users as $user) {
-                $user = User::where("email", $user)->first();
+                $existingUser = User::where("email", $user)->first();
 
-                if (!$user) {
+                if (!$existingUser) {
                     $user = User::create([
                         "username" => Str::upper(Str::random(16)),
                         "email" => $user
                     ]);
                     OrgInvitationTask::dispatch($auth, $user, $org->sessionable);
                 } else {
-                    if ($user->members()->where('memberable_id', $org->sessionable->id)->first()) {
-                        $existingUsers[] = $user->email;
+                    if ($existingUser->members()->where('memberable_id', $org->sessionable->id)->first()) {
+                        $existingUsers[] = $existingUser->email;
                     } else {
-                        OrgInvitationTask::dispatch($auth, $user, $org->sessionable);
+                        OrgInvitationTask::dispatch($auth, $existingUser, $org->sessionable);
                     }
                 }
             }

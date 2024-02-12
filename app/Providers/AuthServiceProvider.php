@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate;
+use App\Models\Member;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Comment;
+use App\Policies\MemberPolicy;
 use App\Policies\OrganizationPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TaskPolicy;
@@ -25,6 +27,7 @@ class AuthServiceProvider extends ServiceProvider
         Project::class => ProjectPolicy::class,
         Organization::class => OrganizationPolicy::class,
         Comment::class => CommentPolicy::class,
+        Member::class => MemberPolicy::class,
     ];
 
     /**

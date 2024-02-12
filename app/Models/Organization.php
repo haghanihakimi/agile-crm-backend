@@ -22,26 +22,30 @@ class Organization extends Model
         'description',
         'image',
     ];
-    
+
     /**
-    * The attributes that should be hidden for serialization.
-    *
-    * @var array<int, string>
-    */
-   protected $hidden = [
-       'id',
-       'creator_id',
-       'created_at',
-       'updated_at',
-   ];
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
 
     public function members(): MorphMany
     {
         return $this->morphMany(Member::class, 'memberable');
     }
 
-    public function activeSessions(): MorphMany {
-        return $this->morphMany(ActiveSession::class,'sessionable');
+    public function users()
+    {
+        return $this->belongsToMany(User::class, Member::class, 'user_id');
+    }
+
+    public function activeSessions(): MorphMany
+    {
+        return $this->morphMany(ActiveSession::class, 'sessionable');
     }
 
     public function tokens(): MorphMany

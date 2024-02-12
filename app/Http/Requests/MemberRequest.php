@@ -39,6 +39,7 @@ class MemberRequest extends FormRequest
                 "user_id" => $memberable['user_id'],
                 "memberable_type" => $memberable['type'],
                 "memberable_id" => $memberable['id'],
+                "role" => isset($memberable['role']) ? $memberable['role'] : 'member',
             ]
         );
 

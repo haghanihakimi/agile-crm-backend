@@ -8,9 +8,17 @@ use App\Http\Controllers\Auth\RestoreAccountController;
 //Signin Routes
 Route::controller(LoginController::class)->group(function () {
     Route::get('/athing', function () {
-        return response()->json('a thing');
+        $user = Auth::guard('api')->user();
+
+        $token = $user->createToken($user->id . ':athing', ['general:full'])->plainTextToken;
+
+        $cookie = cookie('athing', $token, env('SESSION_LIFETIME'));
+
+        return response()->json('a thing')->withCookie($cookie);
     });
+
     Route::post('/signin', 'login')->middleware(['guest']);
+
     Route::get('/auth/check', function () {
         return response()->json(Auth::guard('api')->check() ? [
             "user" => Auth::guard('api')->user()->makeVisible(['email_verified_at', 'created_at']),
@@ -19,6 +27,7 @@ Route::controller(LoginController::class)->group(function () {
             "tasks" => Auth::guard('api')->user()->members()->where('memberable_type', 'App\Models\Task')->count(),
         ] : false);
     });
+    
     Route::post('/signout', 'signout')->middleware(['auth:sanctum']);
 });
 

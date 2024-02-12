@@ -10,4 +10,7 @@ Route::controller(MembersController::class)->group(function () {
         ->middleware(['auth:sanctum', 'throttle:100,1']);
     Route::get('/read/task/{orgUuid}/{projectUuid}/{taskUuid}/members', 'getTaskMembers')
         ->middleware(['auth:sanctum', 'throttle:100,1']);
+
+    Route::delete('/remove/organization/{orgId}/member/{memberId}', 'deleteOrgMember')
+        ->middleware(['auth:sanctum', 'throttle:100,1']);
 });

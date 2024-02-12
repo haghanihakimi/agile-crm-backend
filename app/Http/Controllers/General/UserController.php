@@ -4,6 +4,9 @@ namespace App\Http\Controllers\General;
 
 use App\Http\Controllers\Controller;
 use App\Models\File;
+use App\Models\Member;
+use App\Models\Organization;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +14,21 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    public function getProfileUser($userId)
+    {
+        $user = User::find($userId)->makeVisible(['email']);
+
+        $user->organizations = $user->members()->where('memberable_type', 'App\Models\Organization')->count();
+        $user->projects = $user->members()->where('memberable_type', 'App\Models\Project')->count();
+        $user->tasks = $user->members()->where('memberable_type', 'App\Models\Task')->count();
+
+        return response()->json([
+            "code" => 200,
+            "message" => '',
+            "user" => $user,
+        ], 200);
+    }
+
     public function saveSettings(Request $request)
     {
         $user = Auth::guard('api')->user()->makeVisible(['email_verified_at', 'created_at']);
@@ -94,7 +112,7 @@ class UserController extends Controller
 
         $stored = $file->storeAs('uploads/users/profiles/' . $user->username, $hashName, 'public');
 
-        $user->image = config('app.app_url')."/storage/".$stored;
+        $user->image = config('app.app_url') . "/storage/" . $stored;
         $user->save();
 
         $uploadedFile = File::create([

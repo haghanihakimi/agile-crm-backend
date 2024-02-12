@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\General;
 
 use App\Http\Controllers\Controller;
+use App\Models\Member;
 use App\Models\Organization;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\InvitationToken;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Validator;
@@ -23,7 +25,7 @@ class MembersController extends Controller
         $this->InvitationSerivce = $InvitationSerivce;
     }
 
-    public function getOrgMembers($orgUuid, Organization $organizationModel)
+    public function getOrgMembers($orgUuid)
     {
         $org = Organization::where('org_uuid', $orgUuid)->first();
         if (!$org) {
@@ -31,25 +33,29 @@ class MembersController extends Controller
                 "code" => 404,
                 "message" => "Incorrect organization entry!",
                 "orgMembers" => [],
-            ]);
+            ], 404);
         }
 
-        $orgGate = Gate::inspect('view', [$organizationModel, $org->id]);
+        $orgGate = Gate::inspect('view', [$org, $org->id]);
 
         if ($orgGate->denied()) {
-            return response()->json([]);
+            return response()->json([
+                "code" => 403,
+                "message" => "Unauthorized access!",
+                "orgMembers" => [],
+            ], 403);
         }
 
-        $members = $org->members()->with('users')->get()->flatten()->pluck('users')->unique('id');
+        $members = $org->members()->with(['users', 'memberable:id'])->get();
 
         return response()->json([
             "code" => 200,
             "message" => "",
             "orgMembers" => $members,
-        ]);
+        ], 200);
     }
 
-    public function getProjectMembers($orgUuid, $projectUuid, Organization $organizationModel, Project $projectModel)
+    public function getProjectMembers($orgUuid, $projectUuid)
     {
         $org = Organization::where('org_uuid', $orgUuid)->first();
         $project = Project::where('project_uuid', $projectUuid)->first();
@@ -62,8 +68,8 @@ class MembersController extends Controller
             ]);
         }
 
-        $orgGate = Gate::inspect('view', [$organizationModel, $org->id]);
-        $projectGate = Gate::inspect('view', [$projectModel, $project->id]);
+        $orgGate = Gate::inspect('view', [$org, $org->id]);
+        $projectGate = Gate::inspect('view', [$project, $project->id]);
 
         if ($orgGate->denied() || $projectGate->denied()) {
             return response()->json([
@@ -82,7 +88,7 @@ class MembersController extends Controller
         ]);
     }
 
-    public function getTaskMembers($orgUuid, $projectUuid, $taskUuid, Organization $organizationModel, Project $projectModel)
+    public function getTaskMembers($orgUuid, $projectUuid, $taskUuid)
     {
         $org = Organization::where("org_uuid", $orgUuid)->first();
         $project = Project::where("project_uuid", $projectUuid)->first();
@@ -96,8 +102,8 @@ class MembersController extends Controller
             ]);
         }
 
-        $orgGate = Gate::inspect('view', [$organizationModel, $org->id]);
-        $projectGate = Gate::inspect('view', [$projectModel, $project->id]);
+        $orgGate = Gate::inspect('view', [$org, $org->id]);
+        $projectGate = Gate::inspect('view', [$project, $project->id]);
 
         if ($orgGate->denied() || $projectGate->denied()) {
             return response()->json([
@@ -114,6 +120,45 @@ class MembersController extends Controller
             "message" => "",
             "taskMembers" => $members,
         ]);
+    }
+
+    public function deleteOrgMember($orgId, $memberId)
+    {
+        $user = Auth::guard('api')->user();
+
+        $member = Member::where('user_id', $memberId)
+            ->where('memberable_type', 'App\Models\Organization')
+            ->where('memberable_id', $orgId)->first();
+
+        $org = Organization::where('id', $user->activeSessions->sessionable_id)->first();
+
+        if (!$org || !$member) {
+            return response()->json([
+                "code" => 404,
+                "message" => 'Organization or member not found!',
+                'member' => [],
+            ], 404);
+        }
+
+        $memberUser = User::find($memberId);
+
+        $canDelete = Gate::inspect('delete', [$member, $org, $memberUser]);
+
+        if ($canDelete->denied()) {
+            return response()->json([
+                "code" => 403,
+                "message" => 'Incorrect organization or member entry!',
+                'member' => [],
+            ], 403);
+        }
+        
+        $memberUser->members()->delete();
+
+        return response()->json([
+            "code" => 200,
+            "message" => "",
+            'member' => [],
+        ], 200);
     }
 
     public function generateInvitationLink(Request $request)
@@ -161,18 +206,6 @@ class MembersController extends Controller
         $validation = $this->InvitationSerivce->validateInvitation($email, $signature);
 
         return response()->json($validation);
-    }
-
-    public function inviteMembers(Request $request)
-    {
-        switch ($request->inviteTo) {
-            case "Organization":
-                $organization = new OrganizationController();
-                $invitation = $organization::generateInvitationLink($request->users);
-                return response()->json($invitation);
-            default:
-                return response()->json("broke");
-        }
     }
 
     public function invitations()
