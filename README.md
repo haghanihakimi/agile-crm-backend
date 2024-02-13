@@ -1,66 +1,76 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+# Agile App Back-end
+<p>
+This is the backend for the Agile App project. Agile App is a web application designed to facilitate agile project management by providing tools for task management, organization management, project management, and user management.
 </p>
 
-## About Laravel
+## Features
+<ul>
+<li>Authentication: Users can register and login securely to access their account.</li>
+<li>Task Management: Users can create, edit, and remove tasks for their projects.</li>
+<li>Organization Management: Users can create, edit, and delete organizations.</li>
+<li>Project Management: Users can create, edit, and delete projects within their organizations.</li>
+<li>Member Management: Users can invite, remove, and view members within their organizations.</li>
+<li>Profile Management: Users can edit and delete their profile information.</li>
+</ul>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Technologies Used
+<ul>
+<li>Laravel 10.10 - PHP 8.1</li>
+</ul>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Usage
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+<ul>
+<li>Register/Login: Create a new account or login with existing credentials.</li>
+<li>Organization Management: Create, edit, and delete organizations.</li>
+<li>Project Management: Create, edit, and delete projects within organizations.</li>
+<li>Task Management: Create, edit, and remove tasks for your projects.</li>
+<li>Member Management: Invite, remove, and view members within organizations.</li>
+<li>Profile Management: Edit and delete your profile information.</li>
+</ul>
 
-## Learning Laravel
+## Get Started
+<p>Ensure that the backend is running on http://127.0.0.1:443 or http://127.0.0.1:8000 and the front-end is running on localhost:3000, and adjust the ports in the instructions below accordingly.</p>
+<p>
+A proper mailing service like "Mailtrap" is required for this project.
+</p>
+<ol>
+<li>Clone the repository: git clone <code>https://github.com/haghanihakimi/agile-crm-backend</code></li>
+<li>Navigate to the project directory: <code>cd agile-app-frontend</code></li>
+<li>Install dependencies: <code>composer install</code></li>
+<li>Create a <code>.env</code> file and add <code>BACKEND_DOMAIN="http://localhost"</code>
+<ul>
+<li>Add <code>APP_URL="http://localhost:port_number"</code></li>
+<li>Add <code>FRONT_URL="http://localhost:port_number"</code></li>
+<li>Set <code>DB_DATABASE=agile</code> and <code>DB_USERNAME=root</code></li>
+<li>Set <code>SESSION_DRIVER=cookie</code></li>
+<li>Add <code>SESSION_LIFETIME=31536000</code></li>
+<li>Add <code>SANCTUM_STATEFUL_DOMAINS=localhost:port_number</code></li>
+<li>Add <code>SESSION_DOMAIN=localhost</code></li>
+</ul>
+</li>
+<li>Setup mailtrap account and add info in <code>.env</code> file
+<ul>
+<li><code>MAIL_MAILER=smtp</code></li>
+<li><code>MAIL_HOST=sandbox.smtp.mailtrap.io</code></li>
+<li><code>MAIL_PORT=2525</code></li>
+<li><code>MAIL_USERNAME=username</code></li>
+<li><code>MAIL_PASSWORD=password</code></li>
+<li><code>MAIL_ENCRYPTION=tls</code></li>
+</ul></li>
+<li>Start the development server: <code>php artisan serve</code> or <code>php artisan serve --port=443</code></li>
+<li><strong>Make sure you also cloned agile app - front-end repository <code>https://github.com/haghanihakimi/agile-crm-frontend</code></strong></li>
+</ul>
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Disclaimer
+<p>
+This project is provided as-is and is publicly accessible for cloning and usage. By cloning and using this project, you agree that all modifications, installations, and consequences of running this project on your system are solely your responsibility.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+The project owner and contributors will not be held responsible for any issues, damages, or losses that may occur as a result of cloning, modifying, or running this project on your system.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Please ensure that you understand the risks and responsibilities involved before using this project.
+</p>
 
 ## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+GPL-3.0 license
+This project is licensed under the <a href="https://github.com/haghanihakimi/agile-crm-frontend?tab=GPL-3.0-1-ov-file#GPL-3.0-1-ov-file">GPL-3 license</a>.
