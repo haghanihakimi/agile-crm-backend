@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Carbon\Carbon;
 
 class RegistrationController extends Controller
 {
@@ -71,16 +72,14 @@ class RegistrationController extends Controller
             ], 500);
         }
 
-        $token = $user->createToken($user->id . ':login', ['general:full'])->plainTextToken;
-
-        $cookie = cookie('login', $token, env('SESSION_LIFETIME'));
+        $token = $user->createToken($user->id . ':login', ['general:full'], now()->addMonth())->plainTextToken;
 
         return response()->json([
             'code' => 200,
             'message' => 'Your account successfully created.',
             'token' => $token,
-            'expire' => env('SESSION_LIFETIME'),
+            'expire' => Carbon::parse(now()->addMonth())->timestamp,
             'user' => $user,
-        ], 200)->withCookie($cookie);
+        ], 200);
     }
 }

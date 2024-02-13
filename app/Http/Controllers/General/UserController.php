@@ -16,7 +16,7 @@ class UserController extends Controller
 {
     public function getProfileUser($userId)
     {
-        $user = User::find($userId)->makeVisible(['email']);
+        $user = User::find($userId)->makeVisible(['email', 'phone', 'email_verified_at', 'created_at']);
 
         $user->organizations = $user->members()->where('memberable_type', 'App\Models\Organization')->count();
         $user->projects = $user->members()->where('memberable_type', 'App\Models\Project')->count();
@@ -31,7 +31,7 @@ class UserController extends Controller
 
     public function saveSettings(Request $request)
     {
-        $user = Auth::guard('api')->user()->makeVisible(['email_verified_at', 'created_at']);
+        $user = Auth::guard('api')->user()->makeVisible(['email_verified_at', 'phone', 'created_at']);
 
         $validator = Validator::make(
             $request->user,

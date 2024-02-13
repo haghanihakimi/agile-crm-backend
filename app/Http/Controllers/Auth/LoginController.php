@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Carbon\Carbon;
 
 class LoginController extends Controller
 {
@@ -37,13 +38,13 @@ class LoginController extends Controller
                     $user->restore();
                 }
 
-                $token = $user->createToken($user->id . ':login', ['general:full'], now()->addMonths(1))->plainTextToken;
+                $token = $user->createToken($user->id . ':login', ['general:full'], now()->addMonth())->plainTextToken;
 
                 $this->sessionsService->activateSession($user, 'App\Models\Organization');
 
                 return response()->json([
                     'token' => $token,
-                    'expire' => env('SESSION_LIFETIME'),
+                    'expire' => Carbon::now()->addMonth()->timestamp,
                     'user' => $user,
                 ], 200);
             }
@@ -64,9 +65,15 @@ class LoginController extends Controller
         if ($user) {
             $token = $user->currentAccessToken()->delete();
 
-            return response()->json(true);
+            return response()->json([
+                "code" => 200,
+                "message" => '',
+            ]);
         } else {
-            return response()->json(false);
+            return response()->json([
+                "code" => 500,
+                "message" => 'Signing out failure. Something went wrong with signing out your account. Please try again later.'
+            ], 500);
         }
     }
 }

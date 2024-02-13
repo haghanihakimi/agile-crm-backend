@@ -21,7 +21,7 @@ Route::controller(LoginController::class)->group(function () {
 
     Route::get('/auth/check', function () {
         return response()->json(Auth::guard('api')->check() ? [
-            "user" => Auth::guard('api')->user()->makeVisible(['email_verified_at', 'created_at']),
+            "user" => Auth::guard('api')->user()->makeVisible(['phone', 'email_verified_at', 'created_at']),
             "orgs" => Auth::guard('api')->user()->members()->where('memberable_type', 'App\Models\Organization')->count(),
             "projects" => Auth::guard('api')->user()->members()->where('memberable_type', 'App\Models\Project')->count(),
             "tasks" => Auth::guard('api')->user()->members()->where('memberable_type', 'App\Models\Task')->count(),
