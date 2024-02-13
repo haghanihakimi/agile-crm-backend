@@ -2,14 +2,13 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\General\UserController;
+use App\Http\Controllers\General\SearchController;
 
 
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/', function() {
-        return true;
-    });
+Route::controller(SearchController::class)->group(function () {
+    Route::get('/search/{orgId}', 'search')
+    ->where('orgId', '[a-z0-9\-]+')->middleware(['auth:sanctum']);
 });
 
 //Authentication Routes

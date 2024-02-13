@@ -7,16 +7,6 @@ use App\Http\Controllers\Auth\RestoreAccountController;
 
 //Signin Routes
 Route::controller(LoginController::class)->group(function () {
-    Route::get('/athing', function () {
-        $user = Auth::guard('api')->user();
-
-        $token = $user->createToken($user->id . ':athing', ['general:full'])->plainTextToken;
-
-        $cookie = cookie('athing', $token, env('SESSION_LIFETIME'));
-
-        return response()->json('a thing')->withCookie($cookie);
-    });
-
     Route::post('/signin', 'login')->middleware(['guest']);
 
     Route::get('/auth/check', function () {

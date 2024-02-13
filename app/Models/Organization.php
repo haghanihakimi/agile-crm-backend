@@ -57,4 +57,8 @@ class Organization extends Model
     {
         return $this->belongsToMany(Project::class, 'project_organization');
     }
+
+    public function tasks() {
+        return $this->belongsToMany(Task::class, 'task_project', 'id', 'project_id');
+    }
 }
