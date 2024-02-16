@@ -17,7 +17,7 @@ Route::controller(LoginController::class)->group(function () {
             "tasks" => Auth::guard('api')->user()->members()->where('memberable_type', 'App\Models\Task')->count(),
         ] : false);
     });
-    
+
     Route::post('/signout', 'signout')->middleware(['auth:sanctum']);
 });
 
@@ -30,8 +30,14 @@ Route::controller(RegistrationController::class)->group(function () {
 // Restore account Routes
 Route::controller(RestoreAccountController::class)->group(function () {
     Route::post('/forgot-password', 'sendLink')
-        ->middleware(['guest']);
+        ->middleware(['throttle:1,1']);
 
-    Route::get('/reset-password/{token}', 'resetPassword')
-        ->middleware('guest')->name('password.reset');
+    Route::post('/user/change/password', 'changePassword')
+        ->middleware(['auth:sanctum', 'throttle:2,1']);
+
+    Route::post('/reset/password/{username}', 'resetPassword')
+        ->middleware(['guest', 'throttle:2,1']);
+
+    Route::get('/verify/password/reset/{user}', 'verifySignature')
+        ->middleware(['guest']);
 });
